@@ -5,7 +5,8 @@
   "main": "scripts/send-reminders.js",
   "type": "module",
   "scripts": {
-    "start": "node scripts/send-reminders.js"
+    "start": "node scripts/send-reminders.js",
+    "dev": "npx http-server public -p 8080 --spa"
   },
   "dependencies": {
     "dotenv": "^16.4.5",

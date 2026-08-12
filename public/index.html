@@ -40,24 +40,52 @@
 
     <main id="main-system" style="display: none;">
         <section id="view-home" class="view-section active p-6 pb-40">
-            <div class="max-w-md mx-auto">
-                <header class="mb-8 mt-6 flex justify-between items-start">
-                    <div>
-                        <p id="user-greeting" class="text-sky-700 font-extrabold text-lg tracking-tight">Olá!</p>
-                        <h1 id="today-date-display" class="text-3xl font-extrabold tracking-tighter">...</h1>
+            <div class="max-w-md md:max-w-6xl lg:max-w-[1350px] mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-16 lg:gap-24 items-start px-4 md:px-12">
+                
+                <!-- Coluna da Esquerda (Apenas no Desktop): Destaques / Próximos Eventos -->
+                <div class="hidden md:block md:col-span-5 lg:col-span-5 space-y-6">
+                    <div class="premium-card p-6 bg-white/70 backdrop-blur-md rounded-[32px]">
+                        <h3 class="text-xl font-extrabold text-slate-800 mb-2 tracking-tight flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" class="w-8 h-8 shrink-0 select-none">
+                                <rect x="4" y="16" width="36" height="34" rx="6" fill="#eaddca" />
+                                <path d="M4 22 C4 18.7 6.7 16 10 16 H36 C39.3 16 42 18.7 42 22 V27 H4 Z" fill="#e14d3d" />
+                                <rect x="12" y="8" width="4" height="12" rx="2" fill="#cbd5e1" />
+                                <rect x="30" y="8" width="4" height="12" rx="2" fill="#cbd5e1" />
+                                <path d="M22 28.5 L23.5 32 L27.2 32.5 L24.5 35 L25.2 38.8 L22 37 L18.8 38.8 L19.5 35 L16.8 32.5 L20.5 32 Z" fill="#f5c324" />
+                                <rect x="46" y="16" width="12" height="26" rx="2" fill="#f5b01a" />
+                                <rect x="46" y="34" width="12" height="6" fill="#475569" />
+                                <path d="M46 42 H58 L52 48 H46 Z" fill="#f5b01a" />
+                            </svg>
+                            Em Destaque
+                        </h3>
+                        <p class="text-[10px] text-slate-400 font-black uppercase tracking-wider mb-6">Próximos compromissos do mês</p>
+                        
+                        <div id="highlights-tasks-container" class="space-y-4 max-h-[560px] overflow-y-auto scrollbar-none scroll-smooth pr-1">
+                            <!-- Inserido dinamicamente pelo JS -->
+                        </div>
                     </div>
-                    <div class="flex flex-col items-end gap-2">
-                        <button onclick="switchView('view-profile')">
-                            <img id="header-avatar" src="" class="profile-img">
-                        </button>
-                        <button onclick="logout()" class="text-[9px] font-black text-red-500 uppercase tracking-widest px-3 py-1 rounded-full border border-red-200 hover:bg-red-50 hover:border-red-300 transition-all duration-300 mt-1.5 select-none">Sair</button>
-                    </div>
-                </header>
-                <div class="relative">
-                    <div id="today-tasks-container" class="space-y-4 overflow-y-auto max-h-[580px] pr-2 scroll-smooth"></div>
-                    <div id="scroll-fade-indicator" class="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#f1f5f9] to-transparent pointer-events-none transition-opacity duration-300 opacity-0 z-10"></div>
                 </div>
-                <button id="btn-back-today" onclick="resetToToday()" class="hidden mx-auto mt-8 bg-white text-sky-600 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm border border-sky-100 block">Voltar para Hoje</button>
+
+                <!-- Coluna da Direita (Mobile e Desktop): Conteúdo Principal do Dia -->
+                <div class="md:col-span-7 lg:col-span-7 w-full max-w-md mx-auto md:max-w-xl lg:max-w-2xl md:ml-auto">
+                    <header class="mb-8 mt-6 flex justify-between items-start">
+                        <div>
+                            <p id="user-greeting" class="text-sky-700 font-extrabold text-lg tracking-tight">Olá!</p>
+                            <h1 id="today-date-display" class="text-3xl font-extrabold tracking-tighter">...</h1>
+                        </div>
+                        <div class="flex flex-col items-end gap-2">
+                            <button onclick="switchView('view-profile')">
+                                <img id="header-avatar" src="" class="profile-img">
+                            </button>
+                            <button onclick="logout()" class="text-[9px] font-black text-red-500 uppercase tracking-widest px-3 py-1 rounded-full border border-red-200 hover:bg-red-50 hover:border-red-300 transition-all duration-300 mt-1.5 select-none">Sair</button>
+                        </div>
+                    </header>
+                    <div class="relative">
+                        <div id="today-tasks-container" class="space-y-4 overflow-y-auto max-h-[580px] pr-2 scroll-smooth"></div>
+                        <div id="scroll-fade-indicator" class="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#f1f5f9] to-transparent pointer-events-none transition-opacity duration-300 opacity-0 z-10"></div>
+                    </div>
+                    <button id="btn-back-today" onclick="resetToToday()" class="hidden mx-auto mt-8 bg-white text-sky-600 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm border border-sky-100 block">Voltar para Hoje</button>
+                </div>
             </div>
             
             <div class="fixed bottom-8 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-md grid grid-cols-3 gap-3 z-50">
@@ -127,6 +155,32 @@
                 <div class="premium-card p-6 space-y-5">
                     <input type="text" id="task-label" placeholder="Título (Opcional)" class="w-full text-sm font-bold outline-none border-b pb-2 hover:border-sky-300 focus:border-sky-500 transition-all duration-300">
                     <input type="text" id="task-title" placeholder="O que faremos?" class="w-full text-xl font-extrabold outline-none border-b pb-2 hover:border-sky-300 focus:border-sky-500 transition-all duration-300">
+                    <textarea id="task-desc" placeholder="Descrição / Notas (Opcional)" rows="2" class="w-full text-sm font-medium outline-none border-b pb-2 hover:border-sky-300 focus:border-sky-500 transition-all duration-300 resize-none"></textarea>
+                    
+                    <!-- Campo de Destaque / Importante -->
+                    <div class="flex items-center justify-between bg-slate-50 p-4 rounded-2xl border border-slate-100 hover:border-sky-200 transition-all duration-300">
+                        <div class="flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" class="w-6 h-6 shrink-0 select-none">
+                                <defs>
+                                    <linearGradient id="redGradPanel" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="#ff607f" />
+                                        <stop offset="100%" stop-color="#f53d5f" />
+                                    </linearGradient>
+                                </defs>
+                                <rect x="14" y="14" width="36" height="36" rx="8" transform="rotate(45 32 32)" fill="url(#redGradPanel)" />
+                                <path d="M32 18 C30.8 18 30 18.8 30 20 L31 36 C31 36.5 31.4 37 32 37 C32.6 37 33 36.5 33 36 L34 20 C34 18.8 33.2 18 32 18 Z" fill="#ffffff" />
+                                <circle cx="32" cy="44" r="2.5" fill="#ffffff" />
+                            </svg>
+                            <div>
+                                <span class="text-xs font-bold text-slate-700 block">Marcar como Importante</span>
+                                <span class="text-[9px] text-slate-400 font-bold block">Destacar no painel e na lista</span>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer select-none">
+                            <input type="checkbox" id="task-important" class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                        </label>
+                    </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100 hover:border-sky-200 transition-all duration-300"><label class="text-[9px] font-black text-slate-400 uppercase block">Data</label><input type="date" id="task-date" class="w-full bg-transparent font-bold text-xs outline-none"></div>
                         <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100 hover:border-sky-200 transition-all duration-300"><label class="text-[9px] font-black text-slate-400 uppercase block">Hora</label><input type="time" id="task-time" class="w-full bg-transparent font-bold text-xs outline-none"></div>
@@ -195,6 +249,20 @@
                     Sim, Excluir
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal de Alerta Customizado (Conflitos e Avisos) -->
+    <div id="alert-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[99999] flex items-center justify-center p-4 transition-all duration-300 opacity-0 pointer-events-none">
+        <div class="bg-white rounded-[32px] p-6 max-w-sm w-full text-center shadow-2xl border border-slate-100 scale-95 transition-all duration-300 transform" id="alert-modal-box">
+            <div class="w-14 h-14 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="calendar-range" class="w-7 h-7"></i>
+            </div>
+            <h3 id="alert-modal-title" class="text-xl font-extrabold text-slate-800 mb-2">Conflito de Horário</h3>
+            <p id="alert-modal-message" class="text-sm text-slate-500 mb-6 leading-relaxed">Já existe um compromisso agendado para este intervalo de tempo.</p>
+            <button id="alert-modal-btn" class="w-full bg-slate-900 hover:bg-slate-800 text-white p-3.5 rounded-2xl font-bold text-sm transition-all duration-200 active:scale-95 shadow-lg shadow-slate-900/10">
+                Entendido
+            </button>
         </div>
     </div>
 

@@ -41,6 +41,11 @@ function getLocalDateString(date) {
     return `${year}-${month}-${day}`;
 }
 
+function timeToMinutes(timeStr) {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    return hours * 60 + minutes;
+}
+
 async function runWithTimeout(promise, errorMessage, timeoutMs = 5000) {
     const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error(errorMessage || "A conexão com o banco de dados expirou. Verifique se o Cloud Firestore está criado e ativo no Firebase Console.")), timeoutMs)
@@ -217,6 +222,10 @@ window.switchView = (id) => {
         if (durInput) durInput.value = '';
         const durUnit = document.getElementById('task-duration-unit');
         if (durUnit) durUnit.value = 'minutos';
+        const descInput = document.getElementById('task-desc');
+        if (descInput) descInput.value = '';
+        const importantCheckbox = document.getElementById('task-important');
+        if (importantCheckbox) importantCheckbox.checked = false;
         const geralBtn = document.querySelector(`.cat-btn[onclick*="'geral'"]`);
         if (geralBtn) selectCat('geral', geralBtn);
     }
@@ -236,11 +245,15 @@ window.addTask = async () => {
     const timeInput = document.getElementById('task-time');
     const durationInput = document.getElementById('task-duration');
     const durationUnitSelect = document.getElementById('task-duration-unit');
+    const descInput = document.getElementById('task-desc');
+    const importantCheckbox = document.getElementById('task-important');
 
     const title = titleInput.value;
     const label = labelInput ? labelInput.value.trim() : '';
     const date = dateInput.value;
     const time = timeInput.value;
+    const desc = descInput ? descInput.value.trim() : '';
+    const important = importantCheckbox ? importantCheckbox.checked : false;
 
     if (!title || !date || !time) return alert("Preencha tudo!");
 
@@ -253,6 +266,56 @@ window.addTask = async () => {
         }
     }
 
+    // --- DETECÇÃO DE CONFLITO DE HORÁRIO ---
+    const newStart = timeToMinutes(time);
+    const newDur = (duration && duration > 0) ? duration : 1;
+    const newEnd = newStart + newDur;
+
+    const overlappingTask = scheduleData.find(t => {
+        if (t.date !== date) return false;
+        if (editingTaskId && t.id === editingTaskId) return false; // Ignora a própria tarefa se estiver editando
+
+        const tStart = timeToMinutes(t.time);
+        const tDur = (t.duration && parseInt(t.duration, 10) > 0) ? parseInt(t.duration, 10) : 1;
+        const tEnd = tStart + tDur;
+
+        // Fórmula de sobreposição de intervalos: [StartA, EndA) e [StartB, EndB)
+        return (newStart < tEnd && tStart < newEnd);
+    });
+
+    if (overlappingTask) {
+        const formattedTime = t => {
+            const start = t.time;
+            if (t.duration && parseInt(t.duration, 10) > 0) {
+                const totalMins = timeToMinutes(start) + parseInt(t.duration, 10);
+                const hrs = String(Math.floor(totalMins / 60) % 24).padStart(2, '0');
+                const mins = String(totalMins % 60).padStart(2, '0');
+                return `${start} às ${hrs}:${mins}`;
+            }
+            return `${start}`;
+        };
+        
+        const conflictIntervalText = formattedTime(overlappingTask);
+        const modalMessage = `
+            Você já tem um compromisso agendado neste horário:<br>
+            <div class="my-4 p-3.5 bg-rose-50 border border-rose-100 rounded-2xl text-left">
+                <span class="text-[9px] font-black text-rose-500 uppercase tracking-widest block mb-0.5">Conflito Encontrado</span>
+                <strong class="text-slate-800 font-bold block text-sm mb-1">${overlappingTask.title}</strong>
+                <span class="text-xs text-slate-500 font-semibold flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" class="w-4 h-4 shrink-0 select-none">
+                        <rect x="14" y="14" width="36" height="36" rx="8" transform="rotate(45 32 32)" fill="#f53d5f" />
+                        <path d="M32 18 C30.8 18 30 18.8 30 20 L31 36 C31 36.5 31.4 37 32 37 C32.6 37 33 36.5 33 36 L34 20 C34 18.8 33.2 18 32 18 Z" fill="#ffffff" />
+                        <circle cx="32" cy="44" r="2.5" fill="#ffffff" />
+                    </svg>
+                    ${conflictIntervalText}
+                </span>
+            </div>
+            Por favor, defina outro horário ou edite o compromisso conflitante.
+        `;
+        showCustomAlert("Conflito de Horário", modalMessage);
+        return; // Impede a adição
+    }
+
     if (useLocalStorage) {
         if (editingTaskId) {
             const t = scheduleData.find(x => x.id === editingTaskId);
@@ -263,6 +326,8 @@ window.addTask = async () => {
                 t.time = time;
                 t.category = selectedCategory;
                 t.duration = duration;
+                t.desc = desc;
+                t.important = important;
             }
             editingTaskId = null;
         } else {
@@ -275,6 +340,8 @@ window.addTask = async () => {
                 category: selectedCategory,
                 done: false,
                 duration,
+                desc,
+                important,
                 createdAt: new Date().toISOString()
             };
             scheduleData.push(newTask);
@@ -287,6 +354,8 @@ window.addTask = async () => {
         timeInput.value = '';
         if (durationInput) durationInput.value = '';
         if (durationUnitSelect) durationUnitSelect.value = 'minutos';
+        if (descInput) descInput.value = '';
+        if (importantCheckbox) importantCheckbox.checked = false;
         window.switchView('view-home');
         return;
     }
@@ -304,7 +373,9 @@ window.addTask = async () => {
                     date,
                     time,
                     category: selectedCategory,
-                    duration
+                    duration,
+                    desc,
+                    important
                 }),
                 "A conexão com o Firestore expirou ao tentar salvar o plano editado."
             );
@@ -321,6 +392,8 @@ window.addTask = async () => {
                     category: selectedCategory,
                     done: false,
                     duration,
+                    desc,
+                    important,
                     createdAt: new Date().toISOString()
                 }),
                 "A conexão com o Firestore expirou ao tentar criar a tarefa. Certifique-se de que o banco de dados Firestore está criado e ativo no Firebase Console."
@@ -334,6 +407,8 @@ window.addTask = async () => {
         timeInput.value = '';
         if (durationInput) durationInput.value = '';
         if (durationUnitSelect) durationUnitSelect.value = 'minutos';
+        if (descInput) descInput.value = '';
+        if (importantCheckbox) importantCheckbox.checked = false;
 
         window.switchView('view-home');
     } catch (e) {
@@ -471,6 +546,11 @@ window.editTask = (id) => {
         if (durationUnitSelect) durationUnitSelect.value = 'minutos';
     }
 
+    const descInput = document.getElementById('task-desc');
+    if (descInput) descInput.value = t.desc || '';
+    const importantCheckbox = document.getElementById('task-important');
+    if (importantCheckbox) importantCheckbox.checked = !!t.important;
+
     const catBtn = document.querySelector(`.cat-btn[onclick*="'${t.category}'"]`);
     if (catBtn) selectCat(t.category, catBtn);
 
@@ -517,6 +597,25 @@ function updateUIProfile() {
     document.getElementById('profile-preview').onerror = function() { this.src = defaultCameraPlaceholder; };
 }
 
+// --- FUNÇÃO AUXILIAR PARA FORMATAR DATAS EM DESTAQUE ---
+function getShortFriendlyDateLabel(dateStr) {
+    const today = new Date();
+    
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    const tomorrowStr = getLocalDateString(tomorrow);
+    
+    if (dateStr === tomorrowStr) {
+        return "Amanhã";
+    }
+    
+    const dateParts = dateStr.split('-');
+    const d = new Date(parseInt(dateParts[0], 10), parseInt(dateParts[1], 10) - 1, parseInt(dateParts[2], 10));
+    const weekday = d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
+    const capitalizedWeekday = weekday.charAt(0).toUpperCase() + weekday.slice(1);
+    return `${capitalizedWeekday}, ${dateParts[2]}/${dateParts[1]}`;
+}
+
 function renderHome() {
     const dStr = getLocalDateString(viewingDate);
     document.getElementById('today-date-display').innerText = viewingDate.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -528,6 +627,15 @@ function renderHome() {
     
     tasks.forEach(t => {
         const color = catColors[t.category] || catColors.geral;
+        const isImportant = !!t.important;
+        const starHTML = isImportant ? `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" class="w-5 h-5 shrink-0 select-none">
+            <rect x="14" y="14" width="36" height="36" rx="8" transform="rotate(45 32 32)" fill="#f53d5f" />
+            <path d="M32 18 C30.8 18 30 18.8 30 20 L31 36 C31 36.5 31.4 37 32 37 C32.6 37 33 36.5 33 36 L34 20 C34 18.8 33.2 18 32 18 Z" fill="#ffffff" />
+            <circle cx="32" cy="44" r="2.5" fill="#ffffff" />
+        </svg>` : '';
+        const todayCardBg = isImportant ? 'bg-gradient-to-br from-amber-50/20 to-white border-amber-200/50' : 'bg-white';
+        const borderLeftStyle = isImportant ? 'border-left: 6px solid #f59e0b;' : `border-left: 6px solid ${color};`;
         
         let durationBadge = '';
         if (t.duration && t.duration > 0) {
@@ -536,29 +644,126 @@ function renderHome() {
             const durationStr = hrs > 0 
                 ? `${hrs}h${mins > 0 ? ` ${mins}m` : ''}` 
                 : `${mins} min`;
-            durationBadge = `<span class="ml-2 text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-sky-100 text-sky-700 select-none">⏱️ ${durationStr}</span>`;
+            durationBadge = `<span class="ml-2 text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-sky-100 text-sky-700 select-none flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3 text-sky-600"></i> ${durationStr}</span>`;
         }
 
         const labelHTML = t.label ? `<div class="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-0.5">${t.label}</div>` : '';
+        const descHTML = t.desc ? `<p class="text-xs text-slate-500 mt-1.5 bg-slate-50/80 p-2.5 rounded-xl border border-slate-100 font-medium leading-relaxed">${t.desc}</p>` : '';
+        
         container.innerHTML += `
-            <div class="premium-card p-5 flex items-center gap-4 min-h-[90px] shrink-0 ${t.done ? 'task-done' : ''}" style="border-left: 6px solid ${color}">
+            <div class="premium-card p-5 flex items-center gap-4 min-h-[90px] shrink-0 ${t.done ? 'task-done' : ''} ${todayCardBg}" style="${borderLeftStyle}">
                 <div class="flex-1">
                     ${labelHTML}
                     <div class="flex items-center gap-1.5 mb-0.5">
                         <span class="text-[9px] font-black uppercase text-sky-600">${t.time}</span>
                         ${durationBadge}
                     </div>
-                    <h4 class="font-bold text-slate-900">${t.title}</h4>
+                    <div class="flex items-center gap-2">
+                        ${starHTML}
+                        <h4 class="font-bold text-slate-900">${t.title}</h4>
+                    </div>
+                    ${descHTML}
                 </div>
-                <button onclick="toggleDone('${t.id}')" class="w-10 h-10 rounded-xl border-2 flex items-center justify-center ${t.done ? 'bg-sky-600 border-sky-600' : 'bg-slate-50 border-slate-100'}">
+                <button onclick="toggleDone('${t.id}')" class="w-10 h-10 rounded-xl border-2 flex items-center justify-center ${t.done ? 'bg-sky-600 border-sky-600' : 'bg-slate-50 border-slate-100'} shrink-0">
                     ${t.done ? '<i data-lucide="check" class="text-white w-5 h-5"></i>' : ''}
                 </button>
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 shrink-0">
                     <button onclick="editTask('${t.id}')" class="text-slate-300 hover:text-sky-600 transition-colors p-1" title="Editar"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
                     <button onclick="deleteTask('${t.id}')" class="text-slate-300 hover:text-red-500 transition-colors p-1" title="Excluir"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 </div>
             </div>`;
     });
+
+    // --- RENDERIZAR PAINEL DE DESTAQUES (PRÓXIMOS 30 DIAS - COMPROMISSOS DO MÊS) ---
+    const today = new Date();
+    const next30Days = [];
+    for (let i = 1; i <= 30; i++) {
+        const nextD = new Date(today);
+        nextD.setDate(today.getDate() + i);
+        next30Days.push(getLocalDateString(nextD));
+    }
+
+    const highlightsTasks = scheduleData
+        .filter(t => next30Days.includes(t.date) && !t.done)
+        .sort((a, b) => {
+            const dateComp = a.date.localeCompare(b.date);
+            if (dateComp !== 0) return dateComp;
+            return a.time.localeCompare(b.time);
+        });
+
+    const highlightsContainer = document.getElementById('highlights-tasks-container');
+    if (highlightsContainer) {
+        if (highlightsTasks.length === 0) {
+            highlightsContainer.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-12 px-4 text-center opacity-40 w-full">
+                    <i data-lucide="calendar-check" class="w-12 h-12 text-slate-400 mb-3"></i>
+                    <p class="text-xs italic font-semibold text-slate-500">Nenhum compromisso pendente nos próximos 30 dias.</p>
+                </div>
+            `;
+        } else {
+            let highlightsHtml = '';
+            highlightsTasks.forEach(t => {
+                const color = catColors[t.category] || catColors.geral;
+                const isImportant = !!t.important;
+                const dateLabel = getShortFriendlyDateLabel(t.date);
+                const starHTML = isImportant ? `
+                <span class="flex items-center gap-1 text-[9px] font-black bg-rose-50 text-rose-600 border border-rose-100 px-2.5 py-0.5 rounded-full select-none shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" class="w-3.5 h-3.5 shrink-0">
+                        <rect x="14" y="14" width="36" height="36" rx="8" transform="rotate(45 32 32)" fill="#f53d5f" />
+                        <path d="M32 18 C30.8 18 30 18.8 30 20 L31 36 C31 36.5 31.4 37 32 37 C32.6 37 33 36.5 33 36 L34 20 C34 18.8 33.2 18 32 18 Z" fill="#ffffff" />
+                        <circle cx="32" cy="44" r="2.5" fill="#ffffff" />
+                    </svg>
+                    IMPORTANTE
+                </span>` : '';
+                const labelHTML = t.label ? `<span class="text-[9px] font-extrabold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full uppercase tracking-wider">${t.label}</span>` : '';
+                const cardBg = isImportant ? 'bg-gradient-to-br from-amber-50/30 to-white border-amber-200' : 'bg-white border-slate-100';
+                const borderLeftStyle = isImportant ? 'border-left: 6px solid #f59e0b;' : `border-left: 5px solid ${color};`;
+                
+                let durationBadge = '';
+                if (t.duration && t.duration > 0) {
+                    const hrs = Math.floor(t.duration / 60);
+                    const mins = t.duration % 60;
+                    const durationStr = hrs > 0 
+                        ? `${hrs}h${mins > 0 ? ` ${mins}m` : ''}` 
+                        : `${mins}m`;
+                    durationBadge = `<span class="text-[9px] font-extrabold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-full flex items-center gap-1"><i data-lucide="clock" class="w-3.5 h-3.5 text-sky-600"></i> ${durationStr}</span>`;
+                }
+
+                const descHTML = t.desc ? `<div class="mt-2.5 text-xs text-slate-500 bg-slate-50/75 p-3 rounded-xl border border-slate-100/80 font-medium leading-relaxed">${t.desc}</div>` : '';
+
+                const importantIconHTML = isImportant ? `
+                <div class="shrink-0 flex items-center justify-center pt-0.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" class="w-9 h-9 select-none shrink-0">
+                        <rect x="14" y="14" width="36" height="36" rx="8" transform="rotate(45 32 32)" fill="#f53d5f" />
+                        <path d="M32 18 C30.8 18 30 18.8 30 20 L31 36 C31 36.5 31.4 37 32 37 C32.6 37 33 36.5 33 36 L34 20 C34 18.8 33.2 18 32 18 Z" fill="#ffffff" />
+                        <circle cx="32" cy="44" r="2.5" fill="#ffffff" />
+                    </svg>
+                </div>` : '';
+
+                highlightsHtml += `
+                    <div onclick="goToDayFromDate('${t.date}')" class="premium-card p-5 flex flex-col gap-2.5 hover:scale-[1.01] hover:bg-slate-50/70 hover:shadow-md cursor-pointer transition-all duration-200" style="${borderLeftStyle} ${cardBg}">
+                        <div class="flex justify-between items-center gap-2">
+                            <span class="text-[10px] font-black text-sky-600 uppercase tracking-wider">${dateLabel} — ${t.time}</span>
+                            <div class="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+                                ${durationBadge}
+                                ${labelHTML}
+                                ${starHTML}
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            ${importantIconHTML}
+                            <div class="flex-1 min-w-0">
+                                <h5 class="font-extrabold text-slate-900 text-base leading-tight">${t.title}</h5>
+                                ${descHTML}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            highlightsContainer.innerHTML = highlightsHtml;
+        }
+    }
+
     lucide.createIcons();
     setTimeout(updateScrollFade, 50);
 }
@@ -809,3 +1014,46 @@ if (confirmModal) {
         }
     });
 }
+
+// --- FUNÇÕES E LISTENERS DO MODAL DE ALERTA CUSTOMIZADO ---
+function showCustomAlert(title, message) {
+    const modal = document.getElementById('alert-modal');
+    const box = document.getElementById('alert-modal-box');
+    const titleEl = document.getElementById('alert-modal-title');
+    const msgEl = document.getElementById('alert-modal-message');
+    
+    if (modal && box && titleEl && msgEl) {
+        titleEl.innerText = title;
+        msgEl.innerHTML = message;
+        modal.classList.remove('opacity-0', 'pointer-events-none');
+        box.classList.remove('scale-95');
+        box.classList.add('scale-100');
+        lucide.createIcons();
+    }
+}
+
+function hideCustomAlert() {
+    const modal = document.getElementById('alert-modal');
+    const box = document.getElementById('alert-modal-box');
+    if (modal && box) {
+        modal.classList.add('opacity-0', 'pointer-events-none');
+        box.classList.remove('scale-100');
+        box.classList.add('scale-95');
+    }
+}
+
+window.showCustomAlert = showCustomAlert;
+window.hideCustomAlert = hideCustomAlert;
+
+const alertModal = document.getElementById('alert-modal');
+const alertBtn = document.getElementById('alert-modal-btn');
+if (alertBtn) alertBtn.addEventListener('click', hideCustomAlert);
+if (alertModal) {
+    alertModal.addEventListener('click', (e) => {
+        if (e.target === alertModal) {
+            hideCustomAlert();
+        }
+    });
+}
+
+
