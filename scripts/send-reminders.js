@@ -138,7 +138,7 @@ async function run() {
       const emailHtml = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
           <h2 style="color: #0f172a; margin-top: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.025em; margin-bottom: 8px;">Bom dia!</h2>
-          <p style="color: #475569; font-size: 16px; line-height: 1.6; margin-top: 0; margin-bottom: 20px;">vim te lembrar dos seus compromissos!</p>
+          <p style="color: #475569; font-size: 16px; line-height: 1.6; margin-top: 0; margin-bottom: 20px;">Vim te lembrar dos seus compromissos!</p>
           <p style="color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
             Amanhã você tem <strong>${eventCountText}</strong> ${eventProgramadoText}:
           </p>
