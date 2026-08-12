@@ -47,7 +47,7 @@ async function run() {
     });
   }
 
-  const db = admin.firestore();
+  const db = admin.firestore('default');
 
   // 2. Inicializar o Resend
   if (!process.env.RESEND_API_KEY) {
