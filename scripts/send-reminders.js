@@ -119,30 +119,32 @@ async function run() {
 
       // Montar HTML da lista de tarefas
       const taskListHtml = tasks.map(t => {
-        const color = catColors[t.category] || '#64748b';
         const labelBadge = t.label 
           ? `<span style="font-size: 12px; background-color: #f1f5f9; color: #475569; padding: 2px 8px; border-radius: 9999px; margin-left: 8px; font-weight: 500;">${t.label}</span>` 
           : '';
         return `
-          <li style="margin-bottom: 14px; font-size: 16px; color: #1e293b; display: flex; align-items: center;">
-            <span style="font-weight: bold; color: ${color}; min-width: 60px; display: inline-block;">[${t.time}]</span>
-            <span style="margin-left: 8px;">${t.title}</span>
-            ${labelBadge}
+          <li style="margin-bottom: 12px; font-size: 16px; color: #334155; list-style-type: disc; margin-left: 20px;">
+            <strong style="color: #0f172a;">${t.title}</strong> — às <strong>${t.time}</strong> ${labelBadge}
           </li>
         `;
       }).join('');
 
-      // Montar o corpo do e-mail com design elegante
+      // Determinar plural/singular para o texto
+      const eventCountText = tasks.length === 1 ? '1 evento programado' : `${tasks.length} eventos programados`;
+
+      // Montar o corpo do e-mail com design elegante e limpo (sem emojis como solicitado)
       const emailHtml = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
-          <h2 style="color: #0f172a; margin-top: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.025em;">Olá, ${userName}! 🔔</h2>
-          <p style="color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">Este é um lembrete das suas tarefas agendadas para amanhã, <strong>${tomorrowStr.split('-').reverse().join('/')}</strong>:</p>
+          <h2 style="color: #0f172a; margin-top: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.025em; margin-bottom: 16px;">Bom dia!</h2>
+          <p style="color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+            Amanhã você tem <strong>${eventCountText}</strong>:
+          </p>
           
-          <ul style="list-style-type: none; padding-left: 0; margin: 0 0 24px 0; border-left: 4px solid #3b82f6; padding-left: 16px;">
+          <ul style="padding-left: 0; margin: 0 0 24px 0;">
             ${taskListHtml}
           </ul>
           
-          <p style="color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">Prepare-se para um ótimo dia! 💪</p>
+          <p style="color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">Fique atento aos horários para não perder nenhum compromisso.</p>
           
           <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
           <p style="color: #94a3b8; font-size: 12px; text-align: center; margin-bottom: 0;">Este é um envio automático do seu sistema de cronogramas pessoal.</p>
@@ -155,7 +157,7 @@ async function run() {
       const { data, error } = await resend.emails.send({
         from: sender,
         to: [email],
-        subject: `🔔 Lembrete: Suas Tarefas de Amanhã - ${tomorrowStr.split('-').reverse().join('/')}`,
+        subject: `Lembrete: Suas Tarefas de Amanhã - ${tomorrowStr.split('-').reverse().join('/')}`,
         html: emailHtml
       });
 
