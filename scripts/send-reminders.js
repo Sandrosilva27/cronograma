@@ -131,14 +131,16 @@ async function run() {
       }).join('');
 
       // Determinar plural/singular para o texto
-      const eventCountText = tasks.length === 1 ? '1 evento programado' : `${tasks.length} eventos programados`;
+      const eventCountText = tasks.length === 1 ? '1 evento' : `${tasks.length} eventos`;
+      const eventProgramadoText = tasks.length === 1 ? 'programado' : 'programados';
 
       // Montar o corpo do e-mail com design elegante e limpo (sem emojis como solicitado)
       const emailHtml = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
-          <h2 style="color: #0f172a; margin-top: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.025em; margin-bottom: 16px;">Bom dia!</h2>
+          <h2 style="color: #0f172a; margin-top: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.025em; margin-bottom: 8px;">Bom dia!</h2>
+          <p style="color: #475569; font-size: 16px; line-height: 1.6; margin-top: 0; margin-bottom: 20px;">vim te lembrar dos seus compromissos!</p>
           <p style="color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
-            Amanhã você tem <strong>${eventCountText}</strong>:
+            Amanhã você tem <strong>${eventCountText}</strong> ${eventProgramadoText}:
           </p>
           
           <ul style="padding-left: 0; margin: 0 0 24px 0;">
