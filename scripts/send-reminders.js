@@ -1,4 +1,5 @@
 import admin from 'firebase-admin';
+import { getFirestore } from 'firebase-admin/firestore';
 import { Resend } from 'resend';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -47,7 +48,7 @@ async function run() {
     });
   }
 
-  const db = admin.firestore('default');
+  const db = getFirestore(app, 'default');
 
   // 2. Inicializar o Resend
   if (!process.env.RESEND_API_KEY) {
