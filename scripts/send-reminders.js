@@ -29,6 +29,12 @@ function getLocalDateStringInTz(date, timeZone) {
   return formatter.format(date); // Retorna "YYYY-MM-DD"
 }
 
+// Função para formatar a data YYYY-MM-DD para DD/MM/AAAA
+function formatDateToBr(dateStr) {
+  const [year, month, day] = dateStr.split('-');
+  return `${day}/${month}/${year}`;
+}
+
 // Função para renderizar uma seção de tarefas (amanhã / daqui a 3 dias) no e-mail
 function renderSection(titlePrefix, tasks) {
   if (tasks.length === 0) return '';
@@ -88,31 +94,39 @@ async function run() {
   }
   const resend = new Resend(process.env.RESEND_API_KEY);
 
-  // Obter data de amanhã e daqui a 3 dias em Brasília (America/Sao_Paulo)
+  // Obter datas de amanhã, daqui a 2 dias e daqui a 3 dias em Brasília (America/Sao_Paulo)
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowStr = getLocalDateStringInTz(tomorrow, 'America/Sao_Paulo');
+
+  const in2Days = new Date();
+  in2Days.setDate(in2Days.getDate() + 2);
+  const in2DaysStr = getLocalDateStringInTz(in2Days, 'America/Sao_Paulo');
 
   const in3Days = new Date();
   in3Days.setDate(in3Days.getDate() + 3);
   const in3DaysStr = getLocalDateStringInTz(in3Days, 'America/Sao_Paulo');
 
-  console.log(`Buscando tarefas pendentes para amanhã (${tomorrowStr}) e daqui a 3 dias (${in3DaysStr})...`);
+  const tomorrowBr = formatDateToBr(tomorrowStr);
+  const in2DaysBr = formatDateToBr(in2DaysStr);
+  const in3DaysBr = formatDateToBr(in3DaysStr);
+
+  console.log(`Buscando tarefas pendentes para amanhã (${tomorrowStr}), daqui a 2 dias (${in2DaysStr}) e daqui a 3 dias (${in3DaysStr})...`);
 
   // 3. Buscar todas as tarefas não concluídas do Firestore usando collectionGroup e 'in' query
   const tasksSnapshot = await db.collectionGroup('tasks')
-    .where('date', 'in', [tomorrowStr, in3DaysStr])
+    .where('date', 'in', [tomorrowStr, in2DaysStr, in3DaysStr])
     .where('done', '==', false)
     .get();
 
   if (tasksSnapshot.empty) {
-    console.log("Nenhuma tarefa pendente encontrada para amanhã ou daqui a 3 dias!");
+    console.log("Nenhuma tarefa pendente encontrada para amanhã, daqui a 2 dias ou daqui a 3 dias!");
     process.exit(0);
   }
 
   console.log(`Encontradas ${tasksSnapshot.size} tarefas pendentes. Agrupando por usuário...`);
 
-  // 4. Agrupar tarefas por ID do usuário e por data (amanhã vs daqui a 3 dias)
+  // 4. Agrupar tarefas por ID do usuário e por data (amanhã vs daqui a 2 dias vs daqui a 3 dias)
   const userTasks = {};
   tasksSnapshot.forEach(doc => {
     const taskData = doc.data();
@@ -120,7 +134,7 @@ async function run() {
     const userId = pathParts[1]; // O caminho é: users/{userId}/tasks/{taskId}
 
     if (!userTasks[userId]) {
-      userTasks[userId] = { tomorrow: [], in3Days: [] };
+      userTasks[userId] = { tomorrow: [], in2Days: [], in3Days: [] };
     }
 
     const task = {
@@ -133,6 +147,8 @@ async function run() {
 
     if (taskData.date === tomorrowStr) {
       userTasks[userId].tomorrow.push(task);
+    } else if (taskData.date === in2DaysStr) {
+      userTasks[userId].in2Days.push(task);
     } else if (taskData.date === in3DaysStr) {
       userTasks[userId].in3Days.push(task);
     }
@@ -158,17 +174,19 @@ async function run() {
       const userName = userDoc.exists && userDoc.data().name ? userDoc.data().name : 'Usuário';
 
       const tomorrowTasks = userTasks[userId].tomorrow;
+      const in2DaysTasks = userTasks[userId].in2Days;
       const in3DaysTasks = userTasks[userId].in3Days;
 
-      // Se não houver tarefas em nenhuma das duas datas, pular este usuário
-      if (tomorrowTasks.length === 0 && in3DaysTasks.length === 0) {
-        console.log(`[-] Usuário ${email} não tem tarefas para amanhã nem para daqui a 3 dias. Pulando...`);
+      // Se não houver tarefas em nenhuma das três datas, pular este usuário
+      if (tomorrowTasks.length === 0 && in2DaysTasks.length === 0 && in3DaysTasks.length === 0) {
+        console.log(`[-] Usuário ${email} não tem tarefas para amanhã, daqui a 2 dias ou daqui a 3 dias. Pulando...`);
         continue;
       }
 
       // Renderizar as seções correspondentes
       const tomorrowSectionHtml = renderSection('Amanhã você tem', tomorrowTasks);
-      const in3DaysSectionHtml = renderSection('Daqui a 3 dias você tem', in3DaysTasks);
+      const in2DaysSectionHtml = renderSection(`Em ${in2DaysBr} você tem`, in2DaysTasks);
+      const in3DaysSectionHtml = renderSection(`Em ${in3DaysBr} você tem`, in3DaysTasks);
 
       // Montar o corpo do e-mail com design elegante e limpo (sem emojis como solicitado)
       const emailHtml = `
@@ -177,6 +195,7 @@ async function run() {
           <p style="color: #475569; font-size: 16px; line-height: 1.6; margin-top: 0; margin-bottom: 20px;">Vim te lembrar dos seus compromissos!</p>
           
           ${tomorrowSectionHtml}
+          ${in2DaysSectionHtml}
           ${in3DaysSectionHtml}
           
           <p style="color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">Fique atento as datas e aos horários para não perder nenhum compromisso.</p>
@@ -186,7 +205,7 @@ async function run() {
         </div>
       `;
 
-      const totalTasksCount = tomorrowTasks.length + in3DaysTasks.length;
+      const totalTasksCount = tomorrowTasks.length + in2DaysTasks.length + in3DaysTasks.length;
       console.log(`[+] Enviando lembrete para ${email} (${userName}) com ${totalTasksCount} tarefas...`);
 
       // Disparar e-mail via Resend
