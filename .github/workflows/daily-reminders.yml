@@ -1,0 +1,32 @@
+name: Lembretes Diários por E-mail
+
+on:
+  schedule:
+    # Roda diariamente às 09:00 UTC (06:00 horário de Brasília)
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+    # Permite rodar manualmente a qualquer momento pelo painel do GitHub
+
+jobs:
+  send-reminders:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do Código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-node-version: '20'
+          cache: 'npm'
+
+      - name: Instalar Dependências
+        run: npm install
+
+      - name: Executar Script de Envio
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
+        run: npm start

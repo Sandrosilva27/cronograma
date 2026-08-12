@@ -1,0 +1,15 @@
+{
+  "name": "cronograma-reminders",
+  "version": "1.0.0",
+  "description": "Script para envio de lembretes diários por e-mail",
+  "main": "scripts/send-reminders.js",
+  "type": "module",
+  "scripts": {
+    "start": "node scripts/send-reminders.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "firebase-admin": "^12.0.0",
+    "resend": "^3.2.0"
+  }
+}

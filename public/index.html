@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>cronograma pessoal</title>
+    
+    <link rel="icon" type="image/png" href="img/icon.png">
+    <link rel="apple-touch-icon" href="img/icon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="img/icon.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Cronograma">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#f1f5f9">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <section id="view-login" class="view-section active flex items-center justify-center p-6">
+        <form onsubmit="event.preventDefault(); validaLogin('login')" class="blob-login space-y-8">
+            <div class="w-16 h-16 bg-white rounded-full mx-auto flex items-center justify-center shadow-lg overflow-hidden">
+                <img src="img/icon.png" alt="Favicon" class="w-10 h-10 object-contain">
+            </div>
+            <h2 class="text-3xl font-extrabold text-slate-800 tracking-tighter">Bem-vindo</h2>
+            <div class="space-y-4 text-left">
+                <input type="email" id="user-input" placeholder="E-mail" class="w-full p-4 rounded-2xl bg-white/50 border border-white outline-none font-bold">
+                <input type="password" id="pass-input" placeholder="Senha (mín. 6 caracteres)" class="w-full p-4 rounded-2xl bg-white/50 border border-white outline-none font-bold">
+            </div>
+            <div class="space-y-3 flex flex-col items-center gap-2">
+                <button type="submit" id="btn-login" class="w-[110%] btn-premium text-white p-4.5 rounded-2xl font-black text-lg shadow-lg hover:scale-[1.02] hover:shadow-xl active:scale-95 transition-all duration-200">ENTRAR</button>
+            </div>
+        </form>
+    </section>
+
+    <main id="main-system" style="display: none;">
+        <section id="view-home" class="view-section active p-6 pb-40">
+            <div class="max-w-md mx-auto">
+                <header class="mb-8 mt-6 flex justify-between items-start">
+                    <div>
+                        <p id="user-greeting" class="text-sky-700 font-extrabold text-lg tracking-tight">Olá!</p>
+                        <h1 id="today-date-display" class="text-3xl font-extrabold tracking-tighter">...</h1>
+                    </div>
+                    <div class="flex flex-col items-end gap-2">
+                        <button onclick="switchView('view-profile')">
+                            <img id="header-avatar" src="" class="profile-img">
+                        </button>
+                        <button onclick="logout()" class="text-[9px] font-black text-red-500 uppercase tracking-widest px-3 py-1 rounded-full border border-red-200 hover:bg-red-50 hover:border-red-300 transition-all duration-300 mt-1.5 select-none">Sair</button>
+                    </div>
+                </header>
+                <div class="relative">
+                    <div id="today-tasks-container" class="space-y-4 overflow-y-auto max-h-[580px] pr-2 scroll-smooth"></div>
+                    <div id="scroll-fade-indicator" class="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#f1f5f9] to-transparent pointer-events-none transition-opacity duration-300 opacity-0 z-10"></div>
+                </div>
+                <button id="btn-back-today" onclick="resetToToday()" class="hidden mx-auto mt-8 bg-white text-sky-600 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm border border-sky-100 block">Voltar para Hoje</button>
+            </div>
+            
+            <div class="fixed bottom-8 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-md grid grid-cols-3 gap-3 z-50">
+                <button onclick="switchView('view-week')" class="bg-white text-sky-700 border-2 border-sky-200 p-3 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 shadow-xl text-xs hover:scale-105 active:scale-95 transition-all duration-300"><i data-lucide="calendar-days" class="w-4 h-4"></i> Semana</button>
+                <button onclick="switchView('view-month')" class="bg-white text-sky-700 border-2 border-sky-200 p-3 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 shadow-xl text-xs hover:scale-105 active:scale-95 transition-all duration-300"><i data-lucide="calendar" class="w-4 h-4"></i> Mês</button>
+                <button onclick="switchView('view-panel')" class="btn-premium text-white p-3 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 shadow-xl text-xs hover:scale-105 active:scale-95 transition-all duration-300"><i data-lucide="plus-circle" class="w-4 h-4"></i> Novo</button>
+            </div>
+        </section>
+
+        <section id="view-week" class="view-section p-4 pb-24">
+            <header class="mb-6 mt-4 flex items-center justify-between gap-2">
+                <button onclick="switchView('view-home')" class="p-3 premium-card border-none shrink-0"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+                <div class="flex items-center justify-center gap-2 flex-1">
+                    <button onclick="changeWeek(-1)" class="p-2 bg-white rounded-xl shadow-sm hover:bg-slate-50 border border-slate-100 flex items-center justify-center hover:scale-105 active:scale-95 transition-all"><i data-lucide="chevron-left" class="w-4 h-4 text-slate-600"></i></button>
+                    <h2 id="week-title" class="font-extrabold text-[10px] uppercase tracking-widest text-slate-500 text-center min-w-[100px]">...</h2>
+                    <button onclick="changeWeek(1)" class="p-2 bg-white rounded-xl shadow-sm hover:bg-slate-50 border border-slate-100 flex items-center justify-center hover:scale-105 active:scale-95 transition-all"><i data-lucide="chevron-right" class="w-4 h-4 text-slate-600"></i></button>
+                </div>
+                <div class="flex items-center gap-1 shrink-0">
+                    <button onclick="mirrorWeek()" class="bg-sky-600 text-white px-3 py-2 rounded-xl font-bold text-[10px] shadow-md flex items-center gap-1 hover:scale-105 active:scale-95 transition-all duration-300">
+                        <i data-lucide="copy" class="w-3 h-3"></i> Espelhar
+                    </button>
+                    <button onclick="alert('O botão Espelhar copia todas as tarefas desta semana para a próxima semana automaticamente.')" class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-300 transition-colors">
+                        <i data-lucide="help-circle" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </header>
+            <div class="p-3 overflow-x-auto md:overflow-x-visible">
+                <div class="week-grid min-w-0 md:min-w-[700px]">
+                    <div class="text-center text-[9px] font-black text-slate-400 pb-2 uppercase hidden md:block">Dom</div><div class="text-center text-[9px] font-black text-slate-400 pb-2 uppercase hidden md:block">Seg</div><div class="text-center text-[9px] font-black text-slate-400 pb-2 uppercase hidden md:block">Ter</div><div class="text-center text-[9px] font-black text-slate-400 pb-2 uppercase hidden md:block">Qua</div><div class="text-center text-[9px] font-black text-slate-400 pb-2 uppercase hidden md:block">Qui</div><div class="text-center text-[9px] font-black text-slate-400 pb-2 uppercase hidden md:block">Sex</div><div class="text-center text-[9px] font-black text-slate-400 pb-2 uppercase hidden md:block">Sáb</div>
+                    <div id="day-0" class="day-column" onclick="goToDayFromWeek(0)"></div><div id="day-1" class="day-column" onclick="goToDayFromWeek(1)"></div><div id="day-2" class="day-column" onclick="goToDayFromWeek(2)"></div><div id="day-3" class="day-column" onclick="goToDayFromWeek(3)"></div><div id="day-4" class="day-column" onclick="goToDayFromWeek(4)"></div><div id="day-5" class="day-column" onclick="goToDayFromWeek(5)"></div><div id="day-6" class="day-column" onclick="goToDayFromWeek(6)"></div>
+                </div>
+            </div>
+        </section>
+ 
+        <section id="view-month" class="view-section p-4 pb-24">
+            <header class="mb-6 mt-4 flex items-center justify-between gap-2">
+                <button onclick="switchView('view-home')" class="p-3 premium-card border-none shrink-0"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+                <div class="flex items-center justify-center gap-3 flex-1">
+                    <button onclick="changeMonth(-1)" class="p-2 bg-white rounded-xl shadow-sm hover:bg-slate-50 border border-slate-100 flex items-center justify-center hover:scale-105 active:scale-95 transition-all"><i data-lucide="chevron-left" class="w-4 h-4 text-slate-600"></i></button>
+                    <h2 id="month-title" class="font-extrabold text-xs uppercase tracking-widest text-slate-600 text-center min-w-[120px]">...</h2>
+                    <button onclick="changeMonth(1)" class="p-2 bg-white rounded-xl shadow-sm hover:bg-slate-50 border border-slate-100 flex items-center justify-center hover:scale-105 active:scale-95 transition-all"><i data-lucide="chevron-right" class="w-4 h-4 text-slate-600"></i></button>
+                </div>
+                <div class="w-11 h-11 shrink-0"></div>
+            </header>
+            <div class="p-3 overflow-x-auto md:overflow-x-visible">
+                <div class="month-grid min-w-0 md:min-w-[700px]">
+                    <div class="text-center text-[9px] font-black text-slate-400 pb-2 uppercase">Dom</div>
+                    <div class="text-center text-[9px] font-black text-slate-400 pb-2 uppercase">Seg</div>
+                    <div class="text-center text-[9px] font-black text-slate-400 pb-2 uppercase">Ter</div>
+                    <div class="text-center text-[9px] font-black text-slate-400 pb-2 uppercase">Qua</div>
+                    <div class="text-center text-[9px] font-black text-slate-400 pb-2 uppercase">Qui</div>
+                    <div class="text-center text-[9px] font-black text-slate-400 pb-2 uppercase">Sex</div>
+                    <div class="text-center text-[9px] font-black text-slate-400 pb-2 uppercase">Sáb</div>
+                </div>
+                <div class="month-grid min-w-0 md:min-w-[700px] mt-2" id="month-days-container">
+                    <!-- Days dynamically generated by JS -->
+                </div>
+            </div>
+        </section>
+
+        <section id="view-panel" class="view-section p-6 pb-20">
+            <div class="max-w-md mx-auto">
+                <header class="flex items-center justify-between mb-8 mt-4">
+                    <button onclick="switchView('view-home')" class="p-3.5 premium-card border-none hover:scale-105 active:scale-95 transition-all duration-300"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+                    <h2 id="panel-header-title" class="font-extrabold text-slate-900">Novo Plano</h2>
+                </header>
+                <div class="premium-card p-6 space-y-5">
+                    <input type="text" id="task-label" placeholder="Título (Opcional)" class="w-full text-sm font-bold outline-none border-b pb-2 hover:border-sky-300 focus:border-sky-500 transition-all duration-300">
+                    <input type="text" id="task-title" placeholder="O que faremos?" class="w-full text-xl font-extrabold outline-none border-b pb-2 hover:border-sky-300 focus:border-sky-500 transition-all duration-300">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100 hover:border-sky-200 transition-all duration-300"><label class="text-[9px] font-black text-slate-400 uppercase block">Data</label><input type="date" id="task-date" class="w-full bg-transparent font-bold text-xs outline-none"></div>
+                        <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100 hover:border-sky-200 transition-all duration-300"><label class="text-[9px] font-black text-slate-400 uppercase block">Hora</label><input type="time" id="task-time" class="w-full bg-transparent font-bold text-xs outline-none"></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100 hover:border-sky-200 transition-all duration-300">
+                            <label class="text-[9px] font-black text-slate-400 uppercase block">Duração (Opcional)</label>
+                            <input type="number" id="task-duration" placeholder="Ex: 45" min="1" class="w-full bg-transparent font-bold text-xs outline-none">
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100 hover:border-sky-200 transition-all duration-300">
+                            <label class="text-[9px] font-black text-slate-400 uppercase block">Unidade</label>
+                            <select id="task-duration-unit" class="w-full bg-transparent font-bold text-xs outline-none cursor-pointer">
+                                <option value="minutos">Minutos</option>
+                                <option value="horas">Horas</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black text-slate-400 uppercase block mb-2">Categoria</label>
+                        <div class="flex gap-2 flex-wrap">
+                            <button onclick="selectCat('geral', this)" class="cat-btn active-cat bg-slate-50 px-4 py-2 rounded-xl text-[10px] font-bold border-2 border-transparent hover:scale-105 active:scale-95 transition-all duration-300">Geral</button>
+                            <button onclick="selectCat('trabalho', this)" class="cat-btn bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-[10px] font-bold border-2 border-transparent hover:scale-105 active:scale-95 transition-all duration-300">Trabalho</button>
+                            <button onclick="selectCat('saude', this)" class="cat-btn bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl text-[10px] font-bold border-2 border-transparent hover:scale-105 active:scale-95 transition-all duration-300">Saúde</button>
+                            <button onclick="selectCat('pessoal', this)" class="cat-btn bg-red-50 text-red-600 px-4 py-2 rounded-xl text-[10px] font-bold border-2 border-transparent hover:scale-105 active:scale-95 transition-all duration-300">Pessoal</button>
+                        </div>
+                    </div>
+                    <button id="btn-save-task" onclick="addTask()" class="w-full btn-premium text-white p-4 rounded-2xl font-extrabold hover:shadow-lg hover:scale-[1.02] active:scale-95 transition-all duration-300">Salvar Plano</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-profile" class="view-section p-6">
+            <div class="max-w-md mx-auto">
+                <button onclick="switchView('view-home')" class="p-3.5 premium-card border-none mb-8 hover:scale-105 active:scale-95 transition-all duration-300"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+                <div class="premium-card p-8 text-center flex flex-col items-center">
+                    
+                    <!-- Moldura Interativa de Foto de Perfil -->
+                    <label for="user-photo-input" class="relative cursor-pointer group block mb-6 hover:scale-105 transition-all duration-300 shrink-0">
+                        <img id="profile-preview" src="" class="w-24 h-24 rounded-full object-cover border-4 border-sky-100 mx-auto shadow-sm group-hover:border-sky-400 transition-colors">
+                        <div class="absolute inset-0 w-24 h-24 rounded-full bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white mx-auto shadow-inner">
+                            <i data-lucide="camera" class="w-6 h-6"></i>
+                        </div>
+                        <input type="file" id="user-photo-input" accept="image/*" class="hidden">
+                    </label>
+
+                    <input type="text" id="user-name-input" placeholder="Seu Nome" class="w-full bg-slate-50 border border-slate-200 hover:border-sky-300 focus:border-sky-500 focus:bg-white p-4 rounded-2xl font-bold mb-8 text-center outline-none transition-all duration-300 shadow-sm focus:shadow-md">
+                    <button onclick="saveProfile()" class="w-full btn-premium text-white p-4 rounded-2xl font-extrabold hover:shadow-lg hover:scale-[1.02] active:scale-95 transition-all duration-300">Salvar Perfil</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal de Confirmação Customizado (Excluir) -->
+    <div id="confirm-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[99999] flex items-center justify-center p-4 transition-all duration-300 opacity-0 pointer-events-none">
+        <div class="bg-white rounded-[32px] p-6 max-w-sm w-full text-center shadow-2xl border border-slate-100 scale-95 transition-all duration-300 transform" id="confirm-modal-box">
+            <div class="w-14 h-14 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="trash-2" class="w-7 h-7"></i>
+            </div>
+            <h3 class="text-xl font-extrabold text-slate-800 mb-2">Excluir Plano?</h3>
+            <p class="text-sm text-slate-500 mb-6 leading-relaxed">Esta ação não poderá ser desfeita. Tem certeza que deseja remover este plano do seu cronograma?</p>
+            <div class="flex gap-3">
+                <button id="confirm-cancel-btn" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 p-3.5 rounded-2xl font-bold text-sm transition-all duration-200 active:scale-95">
+                    Cancelar
+                </button>
+                <button id="confirm-delete-btn" class="flex-1 bg-red-500 hover:bg-red-600 text-white p-3.5 rounded-2xl font-bold text-sm transition-all duration-200 active:scale-95 shadow-md shadow-red-500/20">
+                    Sim, Excluir
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
