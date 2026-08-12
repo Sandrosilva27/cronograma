@@ -56,18 +56,20 @@ async function run() {
   }
   const resend = new Resend(process.env.RESEND_API_KEY);
 
-  // Obter data de hoje em Brasília (America/Sao_Paulo)
-  const todayStr = getLocalDateStringInTz(new Date(), 'America/Sao_Paulo');
-  console.log(`Buscando tarefas pendentes para a data: ${todayStr}`);
+  // Obter data de amanhã em Brasília (America/Sao_Paulo)
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = getLocalDateStringInTz(tomorrow, 'America/Sao_Paulo');
+  console.log(`Buscando tarefas pendentes para a data de amanhã: ${tomorrowStr}`);
 
-  // 3. Buscar todas as tarefas não concluídas de hoje no Firestore usando collectionGroup
+  // 3. Buscar todas as tarefas não concluídas de amanhã no Firestore usando collectionGroup
   const tasksSnapshot = await db.collectionGroup('tasks')
-    .where('date', '==', todayStr)
+    .where('date', '==', tomorrowStr)
     .where('done', '==', false)
     .get();
 
   if (tasksSnapshot.empty) {
-    console.log("Nenhuma tarefa pendente encontrada para hoje!");
+    console.log("Nenhuma tarefa pendente encontrada para amanhã!");
     process.exit(0);
   }
 
@@ -133,14 +135,14 @@ async function run() {
       // Montar o corpo do e-mail com design elegante
       const emailHtml = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
-          <h2 style="color: #0f172a; margin-top: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.025em;">Bom dia, ${userName}! ☀️</h2>
-          <p style="color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">Aqui está o resumo das suas tarefas agendadas para hoje, <strong>${todayStr.split('-').reverse().join('/')}</strong>:</p>
+          <h2 style="color: #0f172a; margin-top: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.025em;">Olá, ${userName}! 🔔</h2>
+          <p style="color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">Este é um lembrete das suas tarefas agendadas para amanhã, <strong>${tomorrowStr.split('-').reverse().join('/')}</strong>:</p>
           
           <ul style="list-style-type: none; padding-left: 0; margin: 0 0 24px 0; border-left: 4px solid #3b82f6; padding-left: 16px;">
             ${taskListHtml}
           </ul>
           
-          <p style="color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">Tenha um dia produtivo! 💪</p>
+          <p style="color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">Prepare-se para um ótimo dia! 💪</p>
           
           <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
           <p style="color: #94a3b8; font-size: 12px; text-align: center; margin-bottom: 0;">Este é um envio automático do seu sistema de cronogramas pessoal.</p>
@@ -153,7 +155,7 @@ async function run() {
       const { data, error } = await resend.emails.send({
         from: sender,
         to: [email],
-        subject: `☀️ Suas Tarefas de Hoje - ${todayStr.split('-').reverse().join('/')}`,
+        subject: `🔔 Lembrete: Suas Tarefas de Amanhã - ${tomorrowStr.split('-').reverse().join('/')}`,
         html: emailHtml
       });
 
